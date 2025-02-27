@@ -1,0 +1,317 @@
+# CloudWatch Alarms for Interaction Management System
+# Version: 1.0.0
+# These alarms monitor critical infrastructure components with appropriate thresholds for warning and critical conditions
+
+# ECS Service Alarms
+resource "aws_cloudwatch_metric_alarm" "ecs_cpu_warning" {
+  alarm_name          = "ECS-CPU-Warning"
+  alarm_description   = "Alarm when ECS service CPU exceeds 70% for 10 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 70
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    ClusterName = var.cluster_name
+    ServiceName = var.service_name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "ecs_cpu_critical" {
+  alarm_name          = "ECS-CPU-Critical"
+  alarm_description   = "Alarm when ECS service CPU exceeds 85% for 5 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 85
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    ClusterName = var.cluster_name
+    ServiceName = var.service_name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "ecs_memory_warning" {
+  alarm_name          = "ECS-Memory-Warning"
+  alarm_description   = "Alarm when ECS service memory exceeds 75% for 10 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 75
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    ClusterName = var.cluster_name
+    ServiceName = var.service_name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "ecs_memory_critical" {
+  alarm_name          = "ECS-Memory-Critical"
+  alarm_description   = "Alarm when ECS service memory exceeds 90% for 5 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 90
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    ClusterName = var.cluster_name
+    ServiceName = var.service_name
+  }
+}
+
+# RDS Database Alarms
+resource "aws_cloudwatch_metric_alarm" "rds_cpu_warning" {
+  alarm_name          = "RDS-CPU-Warning"
+  alarm_description   = "Alarm when RDS CPU exceeds 70% for 10 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 70
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    DBInstanceIdentifier = var.db_instance_identifier
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_cpu_critical" {
+  alarm_name          = "RDS-CPU-Critical"
+  alarm_description   = "Alarm when RDS CPU exceeds 85% for 5 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 85
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    DBInstanceIdentifier = var.db_instance_identifier
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_free_storage_warning" {
+  alarm_name          = "RDS-FreeStorage-Warning"
+  alarm_description   = "Alarm when RDS storage utilization exceeds 70%"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "FreeStorageSpace"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = var.db_storage_threshold_warn
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    DBInstanceIdentifier = var.db_instance_identifier
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_free_storage_critical" {
+  alarm_name          = "RDS-FreeStorage-Critical"
+  alarm_description   = "Alarm when RDS storage utilization exceeds 85%"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "FreeStorageSpace"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = var.db_storage_threshold_critical
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    DBInstanceIdentifier = var.db_instance_identifier
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_connection_count_warning" {
+  alarm_name          = "RDS-ConnectionCount-Warning"
+  alarm_description   = "Alarm when RDS connection count exceeds 70% of maximum"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "DatabaseConnections"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = var.db_max_connections * 0.7
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    DBInstanceIdentifier = var.db_instance_identifier
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_connection_count_critical" {
+  alarm_name          = "RDS-ConnectionCount-Critical"
+  alarm_description   = "Alarm when RDS connection count exceeds 90% of maximum"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "DatabaseConnections"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = var.db_max_connections * 0.9
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    DBInstanceIdentifier = var.db_instance_identifier
+  }
+}
+
+# ElastiCache Alarms
+resource "aws_cloudwatch_metric_alarm" "elasticache_cpu_warning" {
+  alarm_name          = "ElastiCache-CPU-Warning"
+  alarm_description   = "Alarm when ElastiCache CPU exceeds 70% for 10 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ElastiCache"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 70
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    CacheClusterId = var.cache_cluster_id
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "elasticache_cpu_critical" {
+  alarm_name          = "ElastiCache-CPU-Critical"
+  alarm_description   = "Alarm when ElastiCache CPU exceeds 85% for 5 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ElastiCache"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 85
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    CacheClusterId = var.cache_cluster_id
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "elasticache_memory_warning" {
+  alarm_name          = "ElastiCache-Memory-Warning"
+  alarm_description   = "Alarm when ElastiCache memory usage exceeds 75%"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "DatabaseMemoryUsagePercentage"
+  namespace           = "AWS/ElastiCache"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 75
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    CacheClusterId = var.cache_cluster_id
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "elasticache_memory_critical" {
+  alarm_name          = "ElastiCache-Memory-Critical"
+  alarm_description   = "Alarm when ElastiCache memory usage exceeds 90%"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "DatabaseMemoryUsagePercentage"
+  namespace           = "AWS/ElastiCache"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 90
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    CacheClusterId = var.cache_cluster_id
+  }
+}
+
+# Application Load Balancer Alarms
+resource "aws_cloudwatch_metric_alarm" "alb_5xx_error_warning" {
+  alarm_name          = "ALB-5XX-Error-Warning"
+  alarm_description   = "Alarm when ALB 5XX error rate exceeds 1% for 5 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HTTPCode_ELB_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = var.request_count * 0.01
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    LoadBalancer = var.load_balancer_name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "alb_5xx_error_critical" {
+  alarm_name          = "ALB-5XX-Error-Critical"
+  alarm_description   = "Alarm when ALB 5XX error rate exceeds 5% for 2 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HTTPCode_ELB_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = 120
+  statistic           = "Sum"
+  threshold           = var.request_count * 0.05
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    LoadBalancer = var.load_balancer_name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "alb_target_response_time_warning" {
+  alarm_name          = "ALB-TargetResponseTime-Warning"
+  alarm_description   = "Alarm when ALB target response time exceeds 300ms for 5 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "TargetResponseTime"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 0.3
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    LoadBalancer = var.load_balancer_name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "alb_target_response_time_critical" {
+  alarm_name          = "ALB-TargetResponseTime-Critical"
+  alarm_description   = "Alarm when ALB target response time exceeds 500ms for 2 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "TargetResponseTime"
+  namespace           = "AWS/ApplicationELB"
+  period              = 120
+  statistic           = "Average"
+  threshold           = 0.5
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+  dimensions = {
+    LoadBalancer = var.load_balancer_name
+  }
+}
