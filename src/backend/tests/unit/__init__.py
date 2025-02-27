@@ -1,0 +1,1 @@
+"Unit tests for the Interaction Management System. These tests focus on testing individual components in isolation."
