@@ -1,0 +1,547 @@
+{
+  "widgets": [
+    {
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# Database Monitoring Dashboard\nMonitoring PostgreSQL RDS instances and ElastiCache Redis for the Interaction Management System"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 1,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/RDS",
+            "CPUUtilization",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "CPU Utilization"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "RDS CPU Utilization",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "value": 70,
+              "label": "Warning",
+              "color": "#ff9900"
+            },
+            {
+              "value": 85,
+              "label": "Critical",
+              "color": "#ff0000"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 8,
+      "y": 1,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/RDS",
+            "FreeableMemory",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "Freeable Memory"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "RDS Memory",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 16,
+      "y": 1,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/RDS",
+            "FreeStorageSpace",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "Free Storage Space"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "RDS Storage",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "value": "${aws:rds_storage_warning_threshold}",
+              "label": "Warning",
+              "color": "#ff9900"
+            },
+            {
+              "value": "${aws:rds_storage_critical_threshold}",
+              "label": "Critical",
+              "color": "#ff0000"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 7,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/RDS",
+            "DatabaseConnections",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "Active Connections"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "RDS Connections",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "value": "${aws:rds_connections_warning_threshold}",
+              "label": "Warning",
+              "color": "#ff9900"
+            },
+            {
+              "value": "${aws:rds_connections_critical_threshold}",
+              "label": "Critical",
+              "color": "#ff0000"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 8,
+      "y": 7,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/RDS",
+            "ReadIOPS",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "Read IOPS"
+            }
+          ],
+          [
+            "AWS/RDS",
+            "WriteIOPS",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "Write IOPS"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "RDS IOPS",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 16,
+      "y": 7,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/RDS",
+            "ReadLatency",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "Read Latency"
+            }
+          ],
+          [
+            "AWS/RDS",
+            "WriteLatency",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "Write Latency"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "RDS Latency",
+        "period": 300
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 13,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "## ElastiCache Redis Metrics"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 14,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ElastiCache",
+            "CPUUtilization",
+            "CacheClusterId",
+            "${aws:elasticache_cluster_id}",
+            {
+              "stat": "Average",
+              "label": "CPU Utilization"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "ElastiCache CPU",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "value": 70,
+              "label": "Warning",
+              "color": "#ff9900"
+            },
+            {
+              "value": 90,
+              "label": "Critical",
+              "color": "#ff0000"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 8,
+      "y": 14,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ElastiCache",
+            "FreeableMemory",
+            "CacheClusterId",
+            "${aws:elasticache_cluster_id}",
+            {
+              "stat": "Average",
+              "label": "Freeable Memory"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "ElastiCache Memory",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 16,
+      "y": 14,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ElastiCache",
+            "CacheHits",
+            "CacheClusterId",
+            "${aws:elasticache_cluster_id}",
+            {
+              "stat": "Sum",
+              "label": "Cache Hits"
+            }
+          ],
+          [
+            "AWS/ElastiCache",
+            "CacheMisses",
+            "CacheClusterId",
+            "${aws:elasticache_cluster_id}",
+            {
+              "stat": "Sum",
+              "label": "Cache Misses"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "Cache Hits/Misses",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 20,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ElastiCache",
+            "CurrConnections",
+            "CacheClusterId",
+            "${aws:elasticache_cluster_id}",
+            {
+              "stat": "Average",
+              "label": "Current Connections"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "ElastiCache Connections",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 20,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ElastiCache",
+            "Evictions",
+            "CacheClusterId",
+            "${aws:elasticache_cluster_id}",
+            {
+              "stat": "Sum",
+              "label": "Evictions"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "Cache Evictions",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "value": "${aws:elasticache_evictions_warning_threshold}",
+              "label": "Warning",
+              "color": "#ff9900"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 26,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "## Connection Pool Metrics"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 27,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "${aws:namespace}",
+            "active_connections",
+            {
+              "stat": "Average",
+              "label": "Active Connections"
+            }
+          ],
+          [
+            "${aws:namespace}",
+            "idle_connections",
+            {
+              "stat": "Average",
+              "label": "Idle Connections"
+            }
+          ],
+          [
+            "${aws:namespace}",
+            "max_connections",
+            {
+              "stat": "Average",
+              "label": "Max Connections"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": true,
+        "region": "${aws:region}",
+        "title": "Connection Pool Status",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 27,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "${aws:namespace}",
+            "connection_wait_time",
+            {
+              "stat": "Average",
+              "label": "Wait Time"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "Connection Wait Time",
+        "period": 300
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 33,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "## Database Health Overview"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 34,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "AWS/RDS",
+            "CPUUtilization",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "RDS CPU"
+            }
+          ],
+          [
+            "AWS/ElastiCache",
+            "CPUUtilization",
+            "CacheClusterId",
+            "${aws:elasticache_cluster_id}",
+            {
+              "stat": "Average",
+              "label": "ElastiCache CPU"
+            }
+          ],
+          [
+            "AWS/RDS",
+            "DatabaseConnections",
+            "DBInstanceIdentifier",
+            "${aws:rds_instance_id}",
+            {
+              "stat": "Average",
+              "label": "DB Connections",
+              "yAxis": "right"
+            }
+          ],
+          [
+            "AWS/ElastiCache",
+            "CurrConnections",
+            "CacheClusterId",
+            "${aws:elasticache_cluster_id}",
+            {
+              "stat": "Average",
+              "label": "Cache Connections",
+              "yAxis": "right"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${aws:region}",
+        "title": "Database Services Health Overview",
+        "period": 300
+      }
+    }
+  ]
+}
