@@ -1,0 +1,416 @@
+{
+  "widgets": [
+    {
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# System Health"
+      }
+    },
+    {
+      "type": "alarm",
+      "x": 0,
+      "y": 1,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "title": "Active Alarms",
+        "alarms": [
+          "arn:aws:cloudwatch:${region}:${account_id}:alarm:ApiGateway-5XXErrors",
+          "arn:aws:cloudwatch:${region}:${account_id}:alarm:ECS-HighCPUUtilization",
+          "arn:aws:cloudwatch:${region}:${account_id}:alarm:RDS-HighCPUUtilization",
+          "arn:aws:cloudwatch:${region}:${account_id}:alarm:ElastiCache-HighCPUUtilization",
+          "arn:aws:cloudwatch:${region}:${account_id}:alarm:ALB-HighLatency"
+        ]
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 7,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "HealthyHostCount", "LoadBalancer", "${alb_name}"],
+          [".", "UnHealthyHostCount", ".", "."]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Load Balancer Host Health",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 7,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "CPUUtilization", "ClusterName", "${ecs_cluster_name}", "ServiceName", "${ecs_service_name}"],
+          ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${db_instance_id}"],
+          ["AWS/ElastiCache", "CPUUtilization", "CacheClusterId", "${cache_cluster_id}"]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Component CPU Utilization",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Warning Threshold",
+              "value": 70,
+              "color": "#ff9900"
+            },
+            {
+              "label": "Critical Threshold",
+              "value": 90,
+              "color": "#d62728"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 13,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# Performance"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 14,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "${alb_name}", {"stat": "Average"}],
+          ["...", {"stat": "p90"}],
+          ["...", {"stat": "p99"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "API Response Times",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Warning Threshold",
+              "value": 0.5,
+              "color": "#ff9900"
+            },
+            {
+              "label": "Critical Threshold",
+              "value": 1.0,
+              "color": "#d62728"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 14,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [{"expression": "100 * m2 / m3", "label": "Error Rate (%)", "id": "e1"}],
+          ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "${alb_name}", {"id": "m2"}],
+          [".", "RequestCount", ".", ".", {"id": "m3"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Error Rates",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Warning Threshold",
+              "value": 1,
+              "color": "#ff9900"
+            },
+            {
+              "label": "Critical Threshold",
+              "value": 5,
+              "color": "#d62728"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 20,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/RDS", "ReadLatency", "DBInstanceIdentifier", "${db_instance_id}"],
+          [".", "WriteLatency", ".", "."]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Database Latency",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 20,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "MemoryUtilization", "ClusterName", "${ecs_cluster_name}", "ServiceName", "${ecs_service_name}"]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "ECS Memory Utilization",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Warning Threshold",
+              "value": 75,
+              "color": "#ff9900"
+            },
+            {
+              "label": "Critical Threshold",
+              "value": 90,
+              "color": "#d62728"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 26,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# Capacity"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 27,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "CPUUtilization", "ClusterName", "${ecs_cluster_name}", "ServiceName", "${ecs_service_name}"],
+          ["AWS/ECS", "MemoryUtilization", ".", ".", ".", "."]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Server Load",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "CPU Warning",
+              "value": 70,
+              "color": "#ff9900"
+            },
+            {
+              "label": "Memory Warning",
+              "value": 75,
+              "color": "#ff9900"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 27,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [{"expression": "100 * (1 - (m1 / ${rds_allocated_storage_bytes}))", "label": "Storage Used (%)", "id": "e1"}],
+          ["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "${db_instance_id}", {"id": "m1"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Database Storage",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Warning Threshold",
+              "value": 70,
+              "color": "#ff9900"
+            },
+            {
+              "label": "Critical Threshold",
+              "value": 85,
+              "color": "#d62728"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 33,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${db_instance_id}"]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Database Connections",
+        "period": 300,
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Warning Threshold",
+              "value": "${db_connection_threshold_warning}",
+              "color": "#ff9900"
+            },
+            {
+              "label": "Critical Threshold",
+              "value": "${db_connection_threshold_critical}",
+              "color": "#d62728"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 33,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ElastiCache", "CurrConnections", "CacheClusterId", "${cache_cluster_id}"],
+          [".", "CacheHits", ".", "."],
+          [".", "CacheMisses", ".", "."]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Cache Usage",
+        "period": 300
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 39,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# Activity"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 40,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${alb_name}"]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Request Volume",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 40,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["Custom", "ActiveUsers", {"label": "Active Users"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${region}",
+        "title": "Active Users",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 46,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${alb_name}"]
+        ],
+        "view": "timeSeries",
+        "stacked": true,
+        "region": "${region}",
+        "title": "Peak Usage Times",
+        "period": 3600,
+        "stat": "Sum",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 46,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["Custom", "InteractionsCreated", {"label": "Interactions Created"}],
+          ["Custom", "InteractionsUpdated", {"label": "Interactions Updated"}]
+        ],
+        "view": "timeSeries",
+        "stacked": true,
+        "region": "${region}",
+        "title": "Data Growth",
+        "period": 86400
+      }
+    }
+  ]
+}
