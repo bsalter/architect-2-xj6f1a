@@ -1,0 +1,89 @@
+[build-system]
+requires = ["setuptools>=42.0.0", "wheel>=0.37.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "interaction-management-system"
+version = "0.1.0"
+description = "Web application for managing and viewing Interaction records through a searchable table interface and dedicated add/edit forms"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Interaction Management System Team", email = "team@example.com"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "Flask==2.3.2",
+    "SQLAlchemy==2.0.19",
+    "Flask-JWT-Extended==4.5.2",
+    "Flask-Cors==4.0.0",
+    "marshmallow==3.20.1",
+    "psycopg2-binary==2.9.6",
+    "alembic==1.11.1",
+    "python-dotenv==1.0.0",
+    "gunicorn==21.2.0",
+    "redis==4.6.0",
+    "pyjwt==2.8.0",
+    "bcrypt==4.0.1",
+    "python-dateutil==2.8.2",
+    "pytz==2023.3",
+    "requests==2.31.0",
+    "Flask-SQLAlchemy==3.0.5",
+    "Flask-Migrate==4.0.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.0",
+    "pytest-flask==1.2.0",
+    "pytest-cov==4.1.0",
+    "factory-boy==3.3.0",
+    "Faker==19.3.0",
+    "pytest-postgresql==5.0.0",
+]
+lint = [
+    "black==23.7.0",
+    "flake8==6.1.0",
+    "isort==5.12.0",
+]
+
+[tool.pytest]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+markers = [
+    "unit: mark a test as a unit test",
+    "integration: mark a test as an integration test",
+    "auth: mark a test related to authentication",
+    "interactions: mark a test related to interactions",
+    "sites: mark a test related to sites",
+]
+addopts = "--cov=. --cov-report=term-missing"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '(\.git|\.eggs|__pycache__|build|dist)'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.flake8]
+max-line-length = 100
+exclude = [".git", "__pycache__", "build", "dist", "migrations"]
+per-file-ignores = {
+    "__init__.py" = "F401,F403",
+    "tests/*" = "E501"
+}
