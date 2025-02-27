@@ -1,0 +1,339 @@
+resource "aws_cloudwatch_metric_alarm" "api_response_time_warning" {
+  alarm_name          = "API-ResponseTime-Warning"
+  alarm_description   = "Alarm when API average response time exceeds 300ms for 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_response_time"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 300
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    endpoint = "interactions"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_response_time_critical" {
+  alarm_name          = "API-ResponseTime-Critical"
+  alarm_description   = "Alarm when API average response time exceeds 500ms for 2 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_response_time"
+  statistic           = "Average"
+  period              = 120
+  evaluation_periods  = 1
+  threshold           = 500
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    endpoint = "interactions"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_search_response_time_warning" {
+  alarm_name          = "API-SearchResponseTime-Warning"
+  alarm_description   = "Alarm when interaction search response time exceeds 500ms for 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_response_time"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 500
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    endpoint = "interactions_search"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_search_response_time_critical" {
+  alarm_name          = "API-SearchResponseTime-Critical"
+  alarm_description   = "Alarm when interaction search response time exceeds 1000ms for 2 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_response_time"
+  statistic           = "Average"
+  period              = 120
+  evaluation_periods  = 1
+  threshold           = 1000
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    endpoint = "interactions_search"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_error_4xx_warning" {
+  alarm_name          = "API-Error-4xx-Warning"
+  alarm_description   = "Alarm when 4xx error rate exceeds 1% of requests over 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = "${var.request_count * 0.01}"
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    status = "4xx"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_error_5xx_critical" {
+  alarm_name          = "API-Error-5xx-Critical"
+  alarm_description   = "Alarm when 5xx error rate exceeds 0.5% of requests over 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = "${var.request_count * 0.005}"
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    status = "5xx"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "authentication_failure_warning" {
+  alarm_name          = "Authentication-Failure-Warning"
+  alarm_description   = "Alarm when authentication failures exceed 10 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 10
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    status = "401"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "authentication_failure_critical" {
+  alarm_name          = "Authentication-Failure-Critical"
+  alarm_description   = "Alarm when authentication failures exceed 30 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 30
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    status = "401"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "exception_count_warning" {
+  alarm_name          = "Exception-Count-Warning"
+  alarm_description   = "Alarm when unhandled exceptions exceed 5 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "exception_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    type = "UnhandledError"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "exception_count_critical" {
+  alarm_name          = "Exception-Count-Critical"
+  alarm_description   = "Alarm when unhandled exceptions exceed 15 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "exception_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 15
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    type = "UnhandledError"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "database_error_warning" {
+  alarm_name          = "Database-Error-Warning"
+  alarm_description   = "Alarm when database errors exceed 5 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "exception_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    type = "DatabaseError"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "page_load_time_warning" {
+  alarm_name          = "PageLoad-Time-Warning"
+  alarm_description   = "Alarm when finder page load time exceeds 2 seconds"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "page_load_time"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 2
+  threshold           = 2000
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    page = "finder"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "page_load_time_critical" {
+  alarm_name          = "PageLoad-Time-Critical"
+  alarm_description   = "Alarm when finder page load time exceeds 5 seconds"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "page_load_time"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 5000
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    page = "finder"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "form_submission_time_warning" {
+  alarm_name          = "Form-SubmissionTime-Warning"
+  alarm_description   = "Alarm when interaction form submission time exceeds 1 second"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "form_submission_time"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 2
+  threshold           = 1000
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    form = "interaction_create"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "form_submission_time_critical" {
+  alarm_name          = "Form-SubmissionTime-Critical"
+  alarm_description   = "Alarm when interaction form submission time exceeds 3 seconds"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "form_submission_time"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 3000
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    form = "interaction_create"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "client_error_warning" {
+  alarm_name          = "Client-Error-Warning"
+  alarm_description   = "Alarm when client-side JavaScript errors exceed 20 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "client_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 20
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    type = "javascript"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "network_error_warning" {
+  alarm_name          = "Network-Error-Warning"
+  alarm_description   = "Alarm when client network errors exceed 10 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "client_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 10
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    type = "network"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "network_error_critical" {
+  alarm_name          = "Network-Error-Critical"
+  alarm_description   = "Alarm when client network errors exceed 30 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "client_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 30
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    type = "network"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "search_performance_warning" {
+  alarm_name          = "Search-Performance-Warning"
+  alarm_description   = "Alarm when advanced search response time exceeds 1 second"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "search_response_time"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 2
+  threshold           = 1000
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    type = "advanced"
+  }
+  alarm_actions = [var.warning_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "search_performance_critical" {
+  alarm_name          = "Search-Performance-Critical"
+  alarm_description   = "Alarm when advanced search response time exceeds 3 seconds"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "search_response_time"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 3000
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    type = "advanced"
+  }
+  alarm_actions = [var.critical_topic_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
