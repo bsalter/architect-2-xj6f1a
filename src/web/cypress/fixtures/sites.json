@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Marketing",
+    "description": "Marketing department site",
+    "is_active": true
+  },
+  {
+    "id": 2,
+    "name": "Sales",
+    "description": "Sales department site",
+    "is_active": true
+  },
+  {
+    "id": 3,
+    "name": "Support",
+    "description": "Customer support department site",
+    "is_active": true
+  },
+  {
+    "id": 4,
+    "name": "Development",
+    "description": "Software development department site",
+    "is_active": true
+  },
+  {
+    "id": 5,
+    "name": "Archived Site",
+    "description": "An inactive site for testing",
+    "is_active": false
+  }
+]
