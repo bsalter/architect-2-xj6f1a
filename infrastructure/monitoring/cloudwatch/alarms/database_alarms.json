@@ -1,0 +1,310 @@
+{
+  "alarms": [
+    {
+      "alarm_name": "DatabaseCPUUtilization-Warning",
+      "alarm_description": "Alarm when database CPU utilization exceeds 70% for 10 minutes",
+      "metric_name": "CPUUtilization",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 2,
+      "threshold": 70,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "DatabaseCPUUtilization-Critical",
+      "alarm_description": "Alarm when database CPU utilization exceeds 85% for 5 minutes",
+      "metric_name": "CPUUtilization",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 1,
+      "threshold": 85,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "DatabaseFreeableMemory-Warning",
+      "alarm_description": "Alarm when database freeable memory falls below 25% for 10 minutes",
+      "metric_name": "FreeableMemory",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 2,
+      "threshold": "${db_memory_threshold * 0.25}",
+      "comparison_operator": "LessThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "DatabaseFreeableMemory-Critical",
+      "alarm_description": "Alarm when database freeable memory falls below 10% for 5 minutes",
+      "metric_name": "FreeableMemory",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 1,
+      "threshold": "${db_memory_threshold * 0.1}",
+      "comparison_operator": "LessThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "DatabaseConnections-Warning",
+      "alarm_description": "Alarm when database connection count exceeds 70% of max connections for 10 minutes",
+      "metric_name": "DatabaseConnections",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 2,
+      "threshold": "${db_max_connections * 0.7}",
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "DatabaseConnections-Critical",
+      "alarm_description": "Alarm when database connection count exceeds 90% of max connections for 5 minutes",
+      "metric_name": "DatabaseConnections",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 1,
+      "threshold": "${db_max_connections * 0.9}",
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "FreeStorageSpace-Warning",
+      "alarm_description": "Alarm when free storage space falls below 30% for 15 minutes",
+      "metric_name": "FreeStorageSpace",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 3,
+      "threshold": "${db_allocated_storage * 1073741824 * 0.3}",
+      "comparison_operator": "LessThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "FreeStorageSpace-Critical",
+      "alarm_description": "Alarm when free storage space falls below 15% for 10 minutes",
+      "metric_name": "FreeStorageSpace",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 2,
+      "threshold": "${db_allocated_storage * 1073741824 * 0.15}",
+      "comparison_operator": "LessThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "ReadLatency-Warning",
+      "alarm_description": "Alarm when read latency exceeds 20ms for 10 minutes",
+      "metric_name": "ReadLatency",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 2,
+      "threshold": 0.02,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "ReadLatency-Critical",
+      "alarm_description": "Alarm when read latency exceeds 50ms for 5 minutes",
+      "metric_name": "ReadLatency",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 1,
+      "threshold": 0.05,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "WriteLatency-Warning",
+      "alarm_description": "Alarm when write latency exceeds 20ms for 10 minutes",
+      "metric_name": "WriteLatency",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 2,
+      "threshold": 0.02,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "WriteLatency-Critical",
+      "alarm_description": "Alarm when write latency exceeds 50ms for 5 minutes",
+      "metric_name": "WriteLatency",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 1,
+      "threshold": 0.05,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "ReplicaLag-Warning",
+      "alarm_description": "Alarm when replica lag exceeds 60 seconds for 10 minutes",
+      "metric_name": "ReplicaLag",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${replica_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 2,
+      "threshold": 60,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "ReplicaLag-Critical",
+      "alarm_description": "Alarm when replica lag exceeds 180 seconds for 5 minutes",
+      "metric_name": "ReplicaLag",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${replica_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 1,
+      "threshold": 180,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "BurstBalanceCredit-Warning",
+      "alarm_description": "Alarm when burst balance credit falls below 50% for 15 minutes",
+      "metric_name": "BurstBalance",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 3,
+      "threshold": 50,
+      "comparison_operator": "LessThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "BurstBalanceCredit-Critical",
+      "alarm_description": "Alarm when burst balance credit falls below 20% for 10 minutes",
+      "metric_name": "BurstBalance",
+      "namespace": "AWS/RDS",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 2,
+      "threshold": 20,
+      "comparison_operator": "LessThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "DatabaseQueryDuration-Warning",
+      "alarm_description": "Alarm when average database query duration exceeds 200ms for 5 minutes",
+      "metric_name": "QueryDuration",
+      "namespace": "Custom/Database",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 1,
+      "threshold": 0.2,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${warning_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    },
+    {
+      "alarm_name": "DatabaseQueryDuration-Critical",
+      "alarm_description": "Alarm when average database query duration exceeds 400ms for 5 minutes",
+      "metric_name": "QueryDuration",
+      "namespace": "Custom/Database",
+      "dimensions": {
+        "DBInstanceIdentifier": "${db_instance_id}"
+      },
+      "statistic": "Average",
+      "period": 300,
+      "evaluation_periods": 1,
+      "threshold": 0.4,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "missing",
+      "alarm_actions": ["${critical_alarm_topic_arn}"],
+      "ok_actions": ["${ok_alarm_topic_arn}"]
+    }
+  ]
+}
