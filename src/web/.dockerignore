@@ -1,0 +1,53 @@
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+.pnp
+.pnp.js
+
+# Development files
+.eslintrc.js
+.prettierrc
+postcss.config.js
+tailwind.config.ts
+vite.config.ts
+tsconfig.json
+.editorconfig
+README.md
+
+# Environment and configuration
+.env
+.env.*
+!.env.example
+
+# Testing files
+tests
+coverage
+cypress
+cypress.config.js
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Version control
+.git
+.gitignore
+.github
+
+# Build artifacts
+dist
+.vite
+build
+
+# System files
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
