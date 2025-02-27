@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "lib": ["es2015", "dom"],
+    "types": ["cypress", "node"],
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["../src/*"]
+    }
+  },
+  "include": ["**/*.ts", "support/*.ts", "e2e/**/*.ts"],
+  "extends": "../tsconfig.json"
+}
