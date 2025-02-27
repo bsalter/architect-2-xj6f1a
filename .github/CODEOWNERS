@@ -1,0 +1,29 @@
+# When pull requests are created that modify code in these defined areas, the configured
+# owners will be automatically requested for review.
+#
+# For more information about CODEOWNERS, see:
+# https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo (fallback)
+* @project-maintainers
+
+# Backend code ownership
+src/backend/auth/* @auth-team @security-lead
+src/backend/interactions/* @backend-team @interaction-lead
+src/backend/sites/* @backend-team @site-context-lead
+src/backend/tests/* @qa-team @backend-team
+
+# Frontend code ownership
+src/web/src/components/auth/* @frontend-team @auth-team
+src/web/src/components/finder/* @frontend-team @ui-lead
+src/web/src/components/interaction/* @frontend-team @forms-lead
+src/web/tests/* @qa-team @frontend-team
+src/web/cypress/* @qa-team @e2e-test-lead
+
+# Infrastructure and DevOps
+infrastructure/* @devops-team @infrastructure-lead
+.github/workflows/* @devops-team @ci-lead
+
+# Documentation
+docs/* @documentation-team @tech-writer
+*.md @documentation-team
