@@ -1,0 +1,49 @@
+# across different editors and IDEs
+# editorconfig.org
+
+# This is the root .editorconfig file
+root = true
+
+# Default settings for all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+max_line_length = 100
+
+# TypeScript and JavaScript files (React frontend)
+[*.{js,jsx,ts,tsx}]
+indent_size = 2
+quote_type = single
+
+# Python files (Flask backend)
+[*.py]
+indent_size = 4
+max_line_length = 88  # Black formatter default
+
+# HTML, CSS, SCSS files
+[*.{html,css,scss}]
+indent_size = 2
+
+# JSON and YAML configuration files
+[*.{json,yml,yaml}]
+indent_size = 2
+
+# Markdown files
+[*.md]
+trim_trailing_whitespace = false  # Trailing whitespace is significant in Markdown
+
+# Shell scripts
+[*.sh]
+end_of_line = lf
+
+# Windows-specific files
+[*.{cmd,bat}]
+end_of_line = crlf
+
+# Makefile requires tabs
+[Makefile]
+indent_style = tab
