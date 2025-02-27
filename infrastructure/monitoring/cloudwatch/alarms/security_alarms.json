@@ -1,0 +1,299 @@
+# CloudWatch Alarms for Security Monitoring
+# These alarms monitor authentication failures, unauthorized access attempts, and potential security breaches
+
+# Variables used throughout this configuration
+variable "warning_topic_arn" {
+  description = "SNS topic ARN for warning alerts"
+  type        = string
+}
+
+variable "critical_topic_arn" {
+  description = "SNS topic ARN for critical alerts"
+  type        = string
+}
+
+variable "ok_topic_arn" {
+  description = "SNS topic ARN for recovery notifications"
+  type        = string
+}
+
+variable "security_notification_arn" {
+  description = "SNS topic ARN for security team notifications"
+  type        = string
+}
+
+variable "total_token_operations" {
+  description = "Estimated total number of token operations per evaluation period"
+  type        = number
+  default     = 100
+}
+
+# Authentication Security Alarms
+resource "aws_cloudwatch_metric_alarm" "high_login_failure_rate" {
+  alarm_name          = "HighLoginFailureRate"
+  alarm_description   = "Alarm when login failure rate exceeds 20% over 15 minutes"
+  namespace           = "Custom/Auth"
+  metric_name         = "LoginFailureRate"
+  statistic           = "Average"
+  period              = 900
+  evaluation_periods  = 1
+  threshold           = 20
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "critical_login_failure_rate" {
+  alarm_name          = "CriticalLoginFailureRate"
+  alarm_description   = "Alarm when login failure rate exceeds 40% over 5 minutes"
+  namespace           = "Custom/Auth"
+  metric_name         = "LoginFailureRate"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 40
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.critical_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "high_failed_logins_by_ip" {
+  alarm_name          = "HighFailedLoginsByIP"
+  alarm_description   = "Alarm when failed logins from a single IP exceed threshold (potential brute force)"
+  namespace           = "Custom/Auth"
+  metric_name         = "FailedLoginsByIP"
+  statistic           = "Maximum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  alarm_actions       = [var.warning_topic_arn, var.security_notification_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+# Access Control and Authorization Alarms
+resource "aws_cloudwatch_metric_alarm" "unauthorized_access_attempts" {
+  alarm_name          = "UnauthorizedAccessAttempts"
+  alarm_description   = "Alarm when unauthorized access attempts exceed 10 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 10
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    status = "403"
+  }
+  alarm_actions = [var.warning_topic_arn, var.security_notification_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "critical_unauthorized_access_attempts" {
+  alarm_name          = "CriticalUnauthorizedAccessAttempts"
+  alarm_description   = "Alarm when unauthorized access attempts exceed 25 in 5 minutes"
+  namespace           = "InteractionManagementSystem"
+  metric_name         = "api_error_count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 25
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    status = "403"
+  }
+  alarm_actions = [var.critical_topic_arn, var.security_notification_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "site_access_denied_rate" {
+  alarm_name          = "SiteAccessDeniedRate"
+  alarm_description   = "Alarm when site access denied events exceed 10 in 15 minutes"
+  namespace           = "Custom/Auth"
+  metric_name         = "SiteAccessDenied"
+  statistic           = "Sum"
+  period              = 900
+  evaluation_periods  = 1
+  threshold           = 10
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "cross_site_access_attempts" {
+  alarm_name          = "CrossSiteAccessAttempts"
+  alarm_description   = "Alarm when cross-site access attempts exceed 5 in 5 minutes (potential security breach)"
+  namespace           = "Custom/Auth"
+  metric_name         = "CrossSiteAttempts"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.critical_topic_arn, var.security_notification_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+# JWT Token Validation Alarms
+resource "aws_cloudwatch_metric_alarm" "token_rejection_rate" {
+  alarm_name          = "TokenRejectionRate"
+  alarm_description   = "Alarm when JWT token rejection rate exceeds 10% over 5 minutes"
+  namespace           = "Custom/Auth"
+  metric_name         = "TokenRejected"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = var.total_token_operations * 0.1
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "critical_token_rejection_rate" {
+  alarm_name          = "CriticalTokenRejectionRate"
+  alarm_description   = "Alarm when JWT token rejection rate exceeds 25% over 5 minutes"
+  namespace           = "Custom/Auth"
+  metric_name         = "TokenRejected"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = var.total_token_operations * 0.25
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.critical_topic_arn, var.security_notification_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+# Web Application Firewall (WAF) Alarms
+resource "aws_cloudwatch_metric_alarm" "waf_high_block_rate" {
+  alarm_name          = "WAFHighBlockRate"
+  alarm_description   = "Alarm when WAF blocked requests exceed 50 in 5 minutes"
+  namespace           = "AWS/WAFV2"
+  metric_name         = "BlockedRequests"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 50
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    WebACL = "InteractionManagementWAF"
+  }
+  alarm_actions = [var.warning_topic_arn, var.security_notification_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "waf_critical_block_rate" {
+  alarm_name          = "WAFCriticalBlockRate"
+  alarm_description   = "Alarm when WAF blocked requests exceed 100 in 5 minutes (potential attack)"
+  namespace           = "AWS/WAFV2"
+  metric_name         = "BlockedRequests"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 100
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    WebACL = "InteractionManagementWAF"
+  }
+  alarm_actions = [var.critical_topic_arn, var.security_notification_arn]
+  ok_actions    = [var.ok_topic_arn]
+}
+
+# API Rate Limiting Alarms
+resource "aws_cloudwatch_metric_alarm" "api_rate_limit_exceeded" {
+  alarm_name          = "APIRateLimitExceeded"
+  alarm_description   = "Alarm when API rate limit hits exceed 30 in 5 minutes"
+  namespace           = "Custom/API"
+  metric_name         = "RateLimitHits"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 30
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_critical_rate_limit_exceeded" {
+  alarm_name          = "APICriticalRateLimitExceeded"
+  alarm_description   = "Alarm when API rate limit hits exceed 75 in 5 minutes (potential DoS)"
+  namespace           = "Custom/API"
+  metric_name         = "RateLimitHits"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 75
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.critical_topic_arn, var.security_notification_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+# Additional Security Monitoring Alarms
+resource "aws_cloudwatch_metric_alarm" "suspicious_api_activity" {
+  alarm_name          = "SuspiciousAPIActivity"
+  alarm_description   = "Alarm when suspicious API activity is detected (multiple security errors from same source)"
+  namespace           = "Custom/Security"
+  metric_name         = "SuspiciousActivity"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  alarm_actions       = [var.critical_topic_arn, var.security_notification_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "vpc_security_group_blocks" {
+  alarm_name          = "VPCSecurityGroupBlocks"
+  alarm_description   = "Alarm when VPC security group blocks exceed 50 in 5 minutes"
+  namespace           = "Custom/VPC"
+  metric_name         = "SecurityGroupBlocks"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 50
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "vpc_critical_security_group_blocks" {
+  alarm_name          = "VPCCriticalSecurityGroupBlocks"
+  alarm_description   = "Alarm when VPC security group blocks exceed 100 in 5 minutes"
+  namespace           = "Custom/VPC"
+  metric_name         = "SecurityGroupBlocks"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 100
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.critical_topic_arn, var.security_notification_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "account_lockout_rate" {
+  alarm_name          = "AccountLockoutRate"
+  alarm_description   = "Alarm when account lockouts exceed 5 in 15 minutes"
+  namespace           = "Custom/Auth"
+  metric_name         = "AccountLockouts"
+  statistic           = "Sum"
+  period              = 900
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanThreshold"
+  alarm_actions       = [var.warning_topic_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "security_audit_failure" {
+  alarm_name          = "SecurityAuditFailure"
+  alarm_description   = "Alarm when security audit logging fails"
+  namespace           = "Custom/Security"
+  metric_name         = "AuditFailure"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  alarm_actions       = [var.critical_topic_arn, var.security_notification_arn]
+  ok_actions          = [var.ok_topic_arn]
+}
