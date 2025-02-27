@@ -1,0 +1,137 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Manual trigger
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY_PREFIX: interaction-mgmt
+  TERRAFORM_DIR: infrastructure/terraform
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    permissions:
+      id-token: write  # Needed for AWS OIDC authentication
+      contents: read   # Needed to checkout the repository
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.4
+      
+      - name: Terraform Init and Apply
+        run: |
+          chmod +x ./infrastructure/scripts/terraform-apply.sh
+          ./infrastructure/scripts/terraform-apply.sh --auto-approve staging
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/backend
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PREFIX }}-backend:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PREFIX }}-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/frontend
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PREFIX }}-frontend:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PREFIX }}-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/backend/requirements.txt
+      
+      - name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          FLASK_ENV: staging
+        run: |
+          cd src/backend
+          python scripts/apply_migrations.py --env staging
+      
+      - name: Update ECS services
+        run: |
+          aws ecs update-service --cluster interaction-mgmt-staging --service interaction-mgmt-backend-service --force-new-deployment
+          aws ecs update-service --cluster interaction-mgmt-staging --service interaction-mgmt-frontend-service --force-new-deployment
+      
+      - name: Wait for deployment to complete
+        run: |
+          aws ecs wait services-stable --cluster interaction-mgmt-staging --services interaction-mgmt-backend-service interaction-mgmt-frontend-service
+      
+      - name: Perform health checks
+        run: |
+          # Get the ALB DNS name
+          ALB_DNS=$(aws cloudformation describe-stacks --stack-name interaction-mgmt-staging --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerDNS'].OutputValue" --output text)
+          
+          # Wait for the ALB to be ready
+          echo "Waiting for ALB to be ready..."
+          sleep 30
+          
+          # Perform health check for backend API
+          echo "Checking backend API health..."
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${ALB_DNS}/api/health || echo "Failed")
+          if [[ "$HEALTH_STATUS" != "200" ]]; then
+            echo "Backend health check failed with status: $HEALTH_STATUS"
+            exit 1
+          fi
+          
+          # Check if frontend is accessible
+          echo "Checking frontend accessibility..."
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${ALB_DNS}/ || echo "Failed")
+          if [[ "$FRONTEND_STATUS" != "200" ]]; then
+            echo "Frontend accessibility check failed with status: $FRONTEND_STATUS"
+            exit 1
+          fi
+          
+          echo "Health checks completed successfully!"
+      
+      - name: Send notifications
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "Deployment to staging completed successfully!"
+            # Add notification commands here (Slack, email, etc.)
+          else
+            echo "Deployment to staging failed!"
+            # Add failure notification commands here
+          fi
