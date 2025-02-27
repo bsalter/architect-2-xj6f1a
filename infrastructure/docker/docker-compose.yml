@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # React-based frontend for the Interaction Management System
+  frontend:
+    build:
+      context: ../../src/web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../src/web:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://backend:5000
+      - VITE_AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - VITE_AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+      - VITE_AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+  # Flask-based API backend for the Interaction Management System
+  backend:
+    build:
+      context: ../../src/backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../../src/backend:/app
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - DATABASE_URI=postgresql://postgres:postgres@db:5432/interaction_management
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_API_AUDIENCE=${AUTH0_AUDIENCE}
+      - AUTH0_ALGORITHMS=RS256
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+
+  # PostgreSQL database for storing application data
+  db:
+    image: postgres:15.3
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=interaction_management
+    networks:
+      - app_network
+
+  # Redis cache for improving application performance
+  redis:
+    image: redis:7.0.12-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+
+  # PostgreSQL administration tool for database management
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "8080:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    depends_on:
+      - db
+    networks:
+      - app_network
+
+volumes:
+  # Persistent storage for PostgreSQL data
+  postgres_data:
+  # Persistent storage for Redis data
+  redis_data:
+
+networks:
+  # Internal network for communication between services
+  app_network:
