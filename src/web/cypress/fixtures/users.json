@@ -1,0 +1,119 @@
+[
+  {
+    "id": 1,
+    "username": "admin_user",
+    "password": "Password123!",
+    "email": "admin@example.com",
+    "sites": [
+      {
+        "id": 1,
+        "name": "Marketing",
+        "role": "Administrator"
+      },
+      {
+        "id": 2,
+        "name": "Sales",
+        "role": "Administrator"
+      },
+      {
+        "id": 3,
+        "name": "Support",
+        "role": "Administrator"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "username": "editor_user",
+    "password": "Password123!",
+    "email": "editor@example.com",
+    "sites": [
+      {
+        "id": 1,
+        "name": "Marketing",
+        "role": "Editor"
+      },
+      {
+        "id": 2,
+        "name": "Sales",
+        "role": "Editor"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "username": "viewer_user",
+    "password": "Password123!",
+    "email": "viewer@example.com",
+    "sites": [
+      {
+        "id": 3,
+        "name": "Support",
+        "role": "Viewer"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "username": "multi_role_user",
+    "password": "Password123!",
+    "email": "multirole@example.com",
+    "sites": [
+      {
+        "id": 1,
+        "name": "Marketing",
+        "role": "Administrator"
+      },
+      {
+        "id": 2,
+        "name": "Sales",
+        "role": "Editor"
+      },
+      {
+        "id": 3,
+        "name": "Support",
+        "role": "Viewer"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "username": "inactive_user",
+    "password": "Password123!",
+    "email": "inactive@example.com",
+    "is_active": false,
+    "sites": [
+      {
+        "id": 1,
+        "name": "Marketing",
+        "role": "Viewer"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "username": "dev_admin",
+    "password": "Password123!",
+    "email": "dev_admin@example.com",
+    "sites": [
+      {
+        "id": 4,
+        "name": "Development",
+        "role": "Administrator"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "username": "archived_user",
+    "password": "Password123!",
+    "email": "archived@example.com",
+    "sites": [
+      {
+        "id": 5,
+        "name": "Archived Site",
+        "role": "Viewer"
+      }
+    ]
+  }
+]
