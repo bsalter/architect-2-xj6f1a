@@ -1,0 +1,217 @@
+name: CD Pipeline - Development Environment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY_PREFIX: interaction-management
+  ECS_CLUSTER: interaction-management-dev
+  ECS_SERVICE_BACKEND: backend-dev
+  ECS_SERVICE_FRONTEND: frontend-dev
+  BACKEND_TASK_DEFINITION: backend-dev
+  FRONTEND_TASK_DEFINITION: frontend-dev
+  BACKEND_CONTAINER_NAME: backend-dev
+  FRONTEND_CONTAINER_NAME: frontend-dev
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Development
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Frontend build and test steps
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run frontend linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: npm test -- --coverage
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      # Backend build and test steps
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: pip install -r requirements.txt
+
+      - name: Run backend linting
+        working-directory: ./backend
+        run: |
+          pip install pylint
+          pylint --disable=C0111,C0103,C0303,C0330 app/
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: pytest tests/ --cov=app
+
+      # Build and push Docker images
+      - name: Build and push backend Docker image
+        id: build-backend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY_PREFIX }}-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./backend
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build and push frontend Docker image
+        id: build-frontend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY_PREFIX }}-frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./frontend
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # Download current task definitions
+      - name: Download task definition - Backend
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.BACKEND_TASK_DEFINITION }} \
+          --query taskDefinition > backend-task-definition.json
+
+      - name: Download task definition - Frontend
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.FRONTEND_TASK_DEFINITION }} \
+          --query taskDefinition > frontend-task-definition.json
+
+      # Update task definitions with new image
+      - name: Update backend task definition
+        id: render-backend-container
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: backend-task-definition.json
+          container-name: ${{ env.BACKEND_CONTAINER_NAME }}
+          image: ${{ steps.build-backend.outputs.image }}
+
+      - name: Update frontend task definition
+        id: render-frontend-container
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: frontend-task-definition.json
+          container-name: ${{ env.FRONTEND_CONTAINER_NAME }}
+          image: ${{ steps.build-frontend.outputs.image }}
+
+      # Deploy to Amazon ECS
+      - name: Deploy backend to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-backend-container.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_BACKEND }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Deploy frontend to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-frontend-container.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_FRONTEND }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      # Run database migrations
+      - name: Run database migrations
+        env:
+          TASK_DEFINITION: ${{ steps.render-backend-container.outputs.task-definition }}
+        run: |
+          aws ecs run-task --cluster ${{ env.ECS_CLUSTER }} \
+          --task-definition $TASK_DEFINITION \
+          --overrides '{"containerOverrides":[{"name":"${{ env.BACKEND_CONTAINER_NAME }}","command":["python","manage.py","db","upgrade"]}]}' \
+          --launch-type FARGATE \
+          --network-configuration '{"awsvpcConfiguration":{"subnets":["${{ secrets.DEV_SUBNET_ID }}"],"securityGroups":["${{ secrets.DEV_SECURITY_GROUP }}"],"assignPublicIp":"ENABLED"}}' \
+          --started-by "GitHub-Actions"
+          
+          echo "Waiting for migrations to complete..."
+          # We could add a check here to verify migration success
+          sleep 30
+
+      # Verify deployment
+      - name: Verify deployment
+        run: |
+          # Check health endpoint of the API
+          HEALTH_CHECK_URL=${{ secrets.DEV_HEALTH_CHECK_URL }}
+          MAX_RETRIES=10
+          RETRY_INTERVAL=20
+          
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Checking health endpoint (attempt $i of $MAX_RETRIES)..."
+            if curl -s -f -o /dev/null $HEALTH_CHECK_URL; then
+              echo "Health check passed!"
+              exit 0
+            else
+              echo "Health check failed, retrying in $RETRY_INTERVAL seconds..."
+              sleep $RETRY_INTERVAL
+            fi
+          done
+          
+          echo "Health check failed after $MAX_RETRIES attempts"
+          exit 1
+
+      # Notifications
+      - name: Send success notification to Slack
+        if: success()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "✅ Development Deployment Successful! 🚀\n*Repository:* ${{ github.repository }}\n*Commit:* ${{ github.sha }}\n*Trigger:* ${{ github.event_name }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send failure notification to Slack
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "❌ Development Deployment Failed! 🔥\n*Repository:* ${{ github.repository }}\n*Commit:* ${{ github.sha }}\n*Trigger:* ${{ github.event_name }}\n\nPlease check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details."
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
