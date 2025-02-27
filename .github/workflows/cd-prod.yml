@@ -1,0 +1,347 @@
+name: Production Deployment
+
+on:
+  workflow_dispatch:  # Manual trigger for production deployment
+  release:
+    types: [created]  # Triggered when a new release is created
+
+# Concurrency settings to prevent multiple deployments running simultaneously
+concurrency:
+  group: environment-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: 
+      name: production
+      url: https://app.example.com
+    timeout-minutes: 60
+
+    steps:
+      # Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Setup Node.js
+      - name: Setup Node.js environment for frontend build
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # Build frontend
+      - name: Build frontend application with production settings
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+        env:
+          REACT_APP_API_URL: ${{ secrets.PROD_API_URL }}
+          REACT_APP_AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          REACT_APP_AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+          NODE_ENV: production
+
+      # Build and push frontend Docker image
+      - name: Build and push frontend Docker image to ECR
+        id: build-frontend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: interaction-frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd frontend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "frontend_image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # Setup Python
+      - name: Setup Python environment for backend
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # Build backend
+      - name: Build backend application
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest
+          pytest
+          python setup.py build
+
+      # Build and push backend Docker image
+      - name: Build and push backend Docker image to ECR
+        id: build-backend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: interaction-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd backend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "backend_image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # Setup Terraform
+      - name: Setup Terraform for infrastructure management
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.4
+
+      # Initialize Terraform
+      - name: Initialize Terraform with production configuration
+        run: |
+          cd terraform/environments/production
+          terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      # Create Terraform plan
+      - name: Create Terraform plan for production environment
+        id: plan
+        run: |
+          cd terraform/environments/production
+          terraform plan -out=tfplan
+        env:
+          TF_VAR_environment: "production"
+          TF_VAR_frontend_image: ${{ steps.build-frontend.outputs.frontend_image }}
+          TF_VAR_backend_image: ${{ steps.build-backend.outputs.backend_image }}
+          TF_VAR_private_subnet_ids: ${{ secrets.PROD_PRIVATE_SUBNET_IDS }}
+          TF_VAR_security_group_ids: ${{ secrets.PROD_SECURITY_GROUP_IDS }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      # Manual approval
+      - name: Require manual approval from product owner
+        id: approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.token }}
+          approvers: ${{ secrets.PROD_APPROVERS }}
+          minimum-approvals: 1
+          issue-title: "Production Deployment Approval"
+          issue-body: "Please approve or deny the production deployment for commit ${{ github.sha }}"
+          exclude-workflow-initiator-as-approver: false
+          additional-approved-words: ''
+          additional-denied-words: ''
+
+      # Check approval status
+      - name: Check approval status
+        if: steps.approval.outputs.approved != 'true'
+        run: |
+          echo "Deployment was not approved, cancelling."
+          exit 1
+
+      # Apply Terraform plan
+      - name: Apply Terraform plan to provision/update infrastructure
+        id: apply
+        run: |
+          cd terraform/environments/production
+          terraform apply -auto-approve tfplan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      # Implement blue-green deployment
+      - name: Start blue-green deployment by updating ECS services
+        id: blue_green
+        run: |
+          # Get current (blue) target group
+          CURRENT_TG_ARN=$(aws elbv2 describe-listeners --listener-arns ${{ secrets.PROD_ALB_LISTENER_ARN }} --query 'Listeners[0].DefaultActions[0].ForwardConfig.TargetGroups[0].TargetGroupArn' --output text)
+          echo "Current target group: $CURRENT_TG_ARN"
+          
+          # Determine which target group to use for green deployment
+          if [[ $CURRENT_TG_ARN == *"-blue-"* ]]; then
+            GREEN_TG_ARN=$(echo $CURRENT_TG_ARN | sed 's/-blue-/-green-/')
+            echo "Deploying to green target group: $GREEN_TG_ARN"
+          else
+            GREEN_TG_ARN=$(echo $CURRENT_TG_ARN | sed 's/-green-/-blue-/')
+            echo "Deploying to blue target group: $GREEN_TG_ARN"
+          fi
+          
+          echo "current_tg=$CURRENT_TG_ARN" >> $GITHUB_OUTPUT
+          echo "green_tg=$GREEN_TG_ARN" >> $GITHUB_OUTPUT
+          
+          # Update service task definition to use new images and point to green target group
+          echo "Updating backend service to use target group $GREEN_TG_ARN"
+          aws ecs update-service \
+            --cluster production-cluster \
+            --service interaction-backend-service \
+            --force-new-deployment \
+            --load-balancers "targetGroupArn=$GREEN_TG_ARN,containerName=interaction-backend,containerPort=5000"
+          
+          echo "Updating frontend service to use target group $GREEN_TG_ARN"
+          aws ecs update-service \
+            --cluster production-cluster \
+            --service interaction-frontend-service \
+            --force-new-deployment \
+            --load-balancers "targetGroupArn=$GREEN_TG_ARN,containerName=interaction-frontend,containerPort=80"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      # Wait for services to stabilize
+      - name: Wait for services to reach stable state
+        run: |
+          echo "Waiting for services to stabilize..."
+          aws ecs wait services-stable \
+            --cluster production-cluster \
+            --services interaction-backend-service interaction-frontend-service
+          echo "Services have reached a stable state"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      # Run database migrations
+      - name: Run database migrations in production environment
+        id: migrations
+        run: |
+          echo "Running database migrations..."
+          # Generate a unique task identification string
+          MIGRATION_TASK_ID="migration-$(date +%s)"
+          
+          # Run migrations using ECS task
+          TASK_ARN=$(aws ecs run-task \
+            --cluster production-cluster \
+            --task-definition interaction-migrations \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.PROD_PRIVATE_SUBNET_IDS }}],securityGroups=[${{ secrets.PROD_SECURITY_GROUP_IDS }}],assignPublicIp=DISABLED}" \
+            --launch-type FARGATE \
+            --tags key=TaskType,value=$MIGRATION_TASK_ID \
+            --query 'tasks[0].taskArn' \
+            --output text)
+          
+          echo "Migration task ARN: $TASK_ARN"
+          
+          # Extract task ID from ARN
+          TASK_ID=$(echo $TASK_ARN | cut -d'/' -f3)
+          echo "Migration task ID: $TASK_ID"
+          
+          # Wait for migration task to complete
+          echo "Waiting for migrations to complete..."
+          aws ecs wait tasks-stopped \
+            --cluster production-cluster \
+            --tasks $TASK_ID
+          
+          # Check if migration was successful
+          TASK_STATUS=$(aws ecs describe-tasks \
+            --cluster production-cluster \
+            --tasks $TASK_ID \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+          
+          if [ "$TASK_STATUS" != "0" ]; then
+            echo "Migration failed with exit code $TASK_STATUS"
+            echo "migration_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "Migrations completed successfully"
+            echo "migration_success=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      # Perform health checks
+      - name: Perform health checks to ensure system stability
+        id: health_checks
+        run: |
+          echo "Performing health checks on new deployment..."
+          GREEN_TG_HEALTH_URL="${{ secrets.PROD_HEALTH_CHECK_URL }}"
+          
+          # Wait for application to be healthy before finalizing deployment
+          attempt=0
+          max_attempts=10
+          
+          until $(curl --output /dev/null --silent --head --fail $GREEN_TG_HEALTH_URL); do
+            if [ $attempt -eq $max_attempts ]; then
+              echo "Health check failed after $max_attempts attempts"
+              echo "health_check_passed=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+            
+            attempt=$((attempt+1))
+            echo "Health check failed, retrying ($attempt/$max_attempts)..."
+            sleep 30
+          done
+          
+          echo "Application health check passed!"
+          echo "health_check_passed=true" >> $GITHUB_OUTPUT
+
+      # Switch traffic from blue to green
+      - name: Switch traffic from blue to green environment via load balancer
+        if: steps.health_checks.outputs.health_check_passed == 'true'
+        id: switch_traffic
+        run: |
+          echo "Switching traffic to new deployment target group: ${{ steps.blue_green.outputs.green_tg }}"
+          
+          # Modify the ALB listener to route traffic to the green target group
+          aws elbv2 modify-listener \
+            --listener-arn ${{ secrets.PROD_ALB_LISTENER_ARN }} \
+            --default-actions Type=forward,TargetGroupArn=${{ steps.blue_green.outputs.green_tg }}
+          
+          echo "Traffic successfully switched to new deployment"
+          echo "traffic_switched=true" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      # Rollback on failure
+      - name: Rollback deployment if necessary
+        if: ${{ failure() && (steps.blue_green.outcome == 'success' || steps.migrations.outcome == 'success' || steps.health_checks.outcome == 'failure') }}
+        run: |
+          echo "Deployment failed, rolling back to previous state..."
+          
+          if [[ "${{ steps.switch_traffic.outcome }}" == "success" && "${{ steps.switch_traffic.outputs.traffic_switched }}" == "true" ]]; then
+            echo "Switching traffic back to original target group: ${{ steps.blue_green.outputs.current_tg }}"
+            
+            # Switch back to the original target group
+            aws elbv2 modify-listener \
+              --listener-arn ${{ secrets.PROD_ALB_LISTENER_ARN }} \
+              --default-actions Type=forward,TargetGroupArn=${{ steps.blue_green.outputs.current_tg }}
+          fi
+          
+          echo "Rollback completed"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      # Send deployment status notification
+      - name: Send deployment status notification to Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-message: |
+            ${{ job.status == 'success' && '✅ Production deployment completed successfully!' || '❌ Production deployment failed!' }}
+            Release: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            ${{ job.status != 'success' && format('See workflow for details: {0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) || '' }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
