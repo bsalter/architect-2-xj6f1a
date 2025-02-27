@@ -1,0 +1,307 @@
+{
+  "widgets": [
+    {
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# API Performance\nMonitoring response times, request volume, and error rates for API endpoints."
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 1,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Endpoint Response Times",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["InteractionManagementSystem", "api_response_time", "endpoint", "interactions", {"stat": "Average"}],
+          ["InteractionManagementSystem", "api_response_time", "endpoint", "auth", {"stat": "Average"}],
+          ["InteractionManagementSystem", "api_response_time", "endpoint", "sites", {"stat": "Average"}]
+        ],
+        "region": "us-east-1",
+        "period": 60,
+        "yAxis": {
+          "left": {
+            "label": "Milliseconds",
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 1,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Slowest Endpoints (p95)",
+        "view": "bar",
+        "metrics": [
+          ["InteractionManagementSystem", "api_response_time", "endpoint", "interactions", {"stat": "p95"}],
+          ["InteractionManagementSystem", "api_response_time", "endpoint", "interactions_search", {"stat": "p95"}],
+          ["InteractionManagementSystem", "api_response_time", "endpoint", "interactions_create", {"stat": "p95"}],
+          ["InteractionManagementSystem", "api_response_time", "endpoint", "interactions_update", {"stat": "p95"}],
+          ["InteractionManagementSystem", "api_response_time", "endpoint", "auth_login", {"stat": "p95"}]
+        ],
+        "region": "us-east-1",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 7,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Request Volume",
+        "view": "timeSeries",
+        "stacked": true,
+        "metrics": [
+          ["InteractionManagementSystem", "api_request_count", "endpoint", "interactions", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "api_request_count", "endpoint", "auth", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "api_request_count", "endpoint", "sites", {"stat": "Sum"}]
+        ],
+        "region": "us-east-1",
+        "period": 60
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 7,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Error Distribution",
+        "view": "pie",
+        "metrics": [
+          ["InteractionManagementSystem", "api_error_count", "status", "400", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "api_error_count", "status", "401", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "api_error_count", "status", "403", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "api_error_count", "status", "404", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "api_error_count", "status", "500", {"stat": "Sum"}]
+        ],
+        "region": "us-east-1",
+        "period": 300
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 13,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# Database\nMonitoring database query performance, index usage, and connection statistics."
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 14,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Query Performance",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/RDS", "ReadLatency", "DBInstanceIdentifier", "interaction-management-db", {"stat": "Average"}],
+          ["AWS/RDS", "WriteLatency", "DBInstanceIdentifier", "interaction-management-db", {"stat": "Average"}]
+        ],
+        "region": "us-east-1",
+        "period": 60
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 14,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Database Connections",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "interaction-management-db", {"stat": "Average"}]
+        ],
+        "region": "us-east-1",
+        "period": 60
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 20,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "title": "Slowest Queries",
+        "query": "fields @timestamp, @message\n| filter @message like \"SLOW QUERY\"\n| sort @timestamp desc\n| limit 20",
+        "region": "us-east-1",
+        "view": "table",
+        "logGroupName": "/interaction-management-system/database"
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 26,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# Exceptions\nMonitoring application errors, stack traces, and exception patterns."
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 27,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Error Count by Type",
+        "view": "timeSeries",
+        "stacked": true,
+        "metrics": [
+          ["InteractionManagementSystem", "exception_count", "type", "ValidationError", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "exception_count", "type", "AuthenticationError", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "exception_count", "type", "AuthorizationError", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "exception_count", "type", "ResourceNotFoundError", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "exception_count", "type", "DatabaseError", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "exception_count", "type", "UnhandledError", {"stat": "Sum"}]
+        ],
+        "region": "us-east-1",
+        "period": 60
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 27,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Error Distribution by Site",
+        "view": "pie",
+        "metrics": [
+          ["InteractionManagementSystem", "exception_count", "site", "site-1", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "exception_count", "site", "site-2", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "exception_count", "site", "site-3", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "exception_count", "site", "global", {"stat": "Sum"}]
+        ],
+        "region": "us-east-1",
+        "period": 300
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 33,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "title": "Exception Timeline",
+        "query": "fields @timestamp, level, message, exception\n| filter level = \"ERROR\"\n| sort @timestamp desc\n| limit 100",
+        "region": "us-east-1",
+        "view": "table",
+        "logGroupName": "/interaction-management-system/application"
+      }
+    },
+    {
+      "type": "text",
+      "x": 0,
+      "y": 39,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# User Experience\nMonitoring page load times, client-side errors, and form submission performance."
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 40,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Page Load Times",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["InteractionManagementSystem", "page_load_time", "page", "finder", {"stat": "Average"}],
+          ["InteractionManagementSystem", "page_load_time", "page", "interaction_form", {"stat": "Average"}],
+          ["InteractionManagementSystem", "page_load_time", "page", "login", {"stat": "Average"}]
+        ],
+        "region": "us-east-1",
+        "period": 60
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 40,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Form Submission Times",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["InteractionManagementSystem", "form_submission_time", "form", "interaction_create", {"stat": "Average"}],
+          ["InteractionManagementSystem", "form_submission_time", "form", "interaction_edit", {"stat": "Average"}],
+          ["InteractionManagementSystem", "form_submission_time", "form", "login", {"stat": "Average"}]
+        ],
+        "region": "us-east-1",
+        "period": 60
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 46,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Client-Side Errors",
+        "view": "timeSeries",
+        "stacked": true,
+        "metrics": [
+          ["InteractionManagementSystem", "client_error_count", "type", "javascript", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "client_error_count", "type", "resource_loading", {"stat": "Sum"}],
+          ["InteractionManagementSystem", "client_error_count", "type", "network", {"stat": "Sum"}]
+        ],
+        "region": "us-east-1",
+        "period": 60
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 46,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Search Performance",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["InteractionManagementSystem", "search_response_time", "type", "basic", {"stat": "Average"}],
+          ["InteractionManagementSystem", "search_response_time", "type", "advanced", {"stat": "Average"}]
+        ],
+        "region": "us-east-1",
+        "period": 60
+      }
+    }
+  ]
+}
