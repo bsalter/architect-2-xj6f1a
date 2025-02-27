@@ -1,0 +1,254 @@
+{
+  "start": "-PT3H",
+  "periodOverride": "auto",
+  "widgets": [
+    {
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 4,
+      "properties": {
+        "markdown": "# Security Dashboard\nMonitors security-related metrics and events for the Interaction Management System.\n\n## Key Metrics:\n* Authentication attempts and failures\n* Authorization failures and site-scoping violations\n* WAF blocks and API errors\n* Network security\n\n## Security Operations:\n* Critical alerts trigger PagerDuty notifications\n* Security incidents are logged in CloudWatch Logs\n* Reference the [Security Runbook](https://example.com/runbook) for incident response procedures"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 4,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Authentication Attempts",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["Custom/Auth/LoginAttempts", "Sum", {"id": "m1", "visible": true, "label": "Total Attempts"}],
+          ["Custom/Auth/LoginSuccess", "Sum", {"id": "m2", "visible": true, "label": "Successful Logins"}],
+          ["Custom/Auth/LoginFailures", "Sum", {"id": "m3", "visible": true, "label": "Failed Logins", "color": "#d62728"}]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Sum",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 4,
+      "width": 6,
+      "height": 6,
+      "properties": {
+        "title": "Authentication Failure Rate",
+        "view": "gauge",
+        "metrics": [
+          ["Custom/Auth/LoginFailureRate", "Average"]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Average",
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gauge": {
+          "thresholds": [
+            {"value": 5, "color": "#2ca02c"},
+            {"value": 15, "color": "#ffbb78"},
+            {"value": 30, "color": "#ff9896"}
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 18,
+      "y": 4,
+      "width": 6,
+      "height": 6,
+      "properties": {
+        "title": "Failed Login Threshold",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["Custom/Auth/FailedLoginsByIP", "Maximum", {"id": "m1"}],
+          ["Custom/Auth/FailedLoginThreshold", "Maximum", {"id": "m2", "color": "#d62728", "label": "Threshold (5)"}]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Maximum",
+        "annotations": {
+          "horizontal": [
+            {"value": 5, "label": "Lockout Threshold", "color": "#d62728"}
+          ]
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 10,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "JWT Token Operations",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["Custom/Auth/TokenGenerated", "Sum", {"id": "m1", "label": "Generated"}],
+          ["Custom/Auth/TokenValidated", "Sum", {"id": "m2", "label": "Validated"}],
+          ["Custom/Auth/TokenRejected", "Sum", {"id": "m3", "label": "Rejected", "color": "#d62728"}]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Sum"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 10,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Site-Scoping and Authorization Failures",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["Custom/Auth/SiteAccessDenied", "Sum", {"id": "m1", "label": "Site Access Denied"}],
+          ["Custom/Auth/PermissionDenied", "Sum", {"id": "m2", "label": "Permission Denied"}],
+          ["Custom/Auth/CrossSiteAttempts", "Sum", {"id": "m3", "label": "Cross-Site Attempts", "color": "#ff7f0e"}]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Sum"
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 16,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "title": "Authentication Failure Logs",
+        "query": "SOURCE '/aws/lambda/interaction-management-auth' | fields @timestamp, @message\n| filter @message like /Authentication failed/\n| sort @timestamp desc\n| limit 20",
+        "region": "us-east-1",
+        "view": "table"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 22,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "WAF Security",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/WAFV2", "BlockedRequests", "WebACL", "InteractionManagementWAF", {"id": "m1", "label": "Blocked Requests", "color": "#d62728"}],
+          ["AWS/WAFV2", "AllowedRequests", "WebACL", "InteractionManagementWAF", {"id": "m2", "label": "Allowed Requests"}],
+          ["AWS/WAFV2", "CountedRequests", "WebACL", "InteractionManagementWAF", {"id": "m3", "label": "Counted Requests", "color": "#ff7f0e"}]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Sum"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 22,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "API Gateway 4XX/5XX Errors",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/ApiGateway", "4XXError", "ApiName", "InteractionManagementAPI", {"id": "m1", "label": "4XX Errors", "color": "#ff7f0e"}],
+          ["AWS/ApiGateway", "5XXError", "ApiName", "InteractionManagementAPI", {"id": "m2", "label": "5XX Errors", "color": "#d62728"}]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Sum"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 28,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "VPC Security",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["Custom/VPC/RejectedConnections", "Sum", {"id": "m1", "label": "Rejected Connections", "color": "#d62728"}],
+          ["Custom/VPC/SecurityGroupBlocks", "Sum", {"id": "m2", "label": "Security Group Blocks", "color": "#ff7f0e"}]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Sum"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 28,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Rate Limiting",
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["Custom/API/RateLimitHits", "Sum", {"id": "m1", "label": "Rate Limit Hits", "color": "#ff7f0e"}],
+          ["Custom/API/ThrottledRequests", "Sum", {"id": "m2", "label": "Throttled Requests", "color": "#d62728"}]
+        ],
+        "region": "us-east-1",
+        "period": 300,
+        "stat": "Sum"
+      }
+    },
+    {
+      "type": "alarm",
+      "x": 0,
+      "y": 34,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "title": "Security Alarms",
+        "alarms": [
+          "arn:aws:cloudwatch:us-east-1:123456789012:alarm:HighLoginFailureRate",
+          "arn:aws:cloudwatch:us-east-1:123456789012:alarm:UnauthorizedAccessAttempts",
+          "arn:aws:cloudwatch:us-east-1:123456789012:alarm:WAFHighBlockRate",
+          "arn:aws:cloudwatch:us-east-1:123456789012:alarm:SuspiciousAPIActivity"
+        ]
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 40,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "title": "Cross-Site Access Attempts",
+        "query": "SOURCE '/aws/lambda/interaction-management-api' | fields @timestamp, @message, sourceIP, userId, attemptedSiteId\n| filter @message like /Site access denied/ or @message like /cross-site access attempt/\n| sort @timestamp desc\n| limit 20",
+        "region": "us-east-1",
+        "view": "table"
+      }
+    }
+  ]
+}
